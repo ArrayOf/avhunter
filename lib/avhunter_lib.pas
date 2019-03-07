@@ -6,6 +6,7 @@ type
 
   TAVHunterInfo = record
     &Unit: string;
+    FileName: string;
     Line: Integer;
     Method: string;
   end;
@@ -34,6 +35,7 @@ type
   TRow = record
     Address: Integer;
     Row: Integer;
+    Next: PRow;
   end;
 
   PMethod = ^TMethod;
@@ -113,7 +115,8 @@ begin
   repeat
     if (iAddress >= pUnitItem.Start) and (iAddress <= pUnitItem.&End) then
     begin
-      ALocation.&Unit := pUnitItem.&Unit;
+      ALocation.&Unit    := pUnitItem.&Unit;
+      ALocation.FileName := pUnitItem.Path;
 
       pMethodItem := pUnitItem.MethodGenesys;
       repeat
@@ -162,7 +165,7 @@ var
     REGEX = '^[ ]....:(.{8})[ ](.{8}).*?M=([^ ]+)';
   var
     _RegEx   : TRegEx;
-    _Matche  : TMatch;
+    _Match   : TMatch;
     sLine    : string;
     pItem    : PUnit;
     pPrevious: PUnit;
@@ -184,12 +187,12 @@ var
         Exit;
       end;
 
-      _Matche := _RegEx.Match(sLine);
+      _Match := _RegEx.Match(sLine);
 
       New(pItem);
-      pItem.Start         := StrToInt('$' + _Matche.Groups[1].Value);
-      pItem.&End          := pItem.Start + StrToInt('$' + _Matche.Groups[2].Value) - 1;
-      pItem.&Unit         := _Matche.Groups[3].Value;
+      pItem.Start         := StrToInt('$' + _Match.Groups[1].Value);
+      pItem.&End          := pItem.Start + StrToInt('$' + _Match.Groups[2].Value) - 1;
+      pItem.&Unit         := _Match.Groups[3].Value;
       pItem.MethodGenesys := nil;
       pItem.Next          := nil;
 
@@ -203,7 +206,7 @@ var
     REGEX = '^[ ].{4}:(.{8}).{7}(.*)$';
   var
     _RegEx   : TRegEx;
-    _Matche  : TMatch;
+    _Match   : TMatch;
     sLine    : string;
     pItem    : PMethod;
     pPrevious: PMethod;
@@ -219,11 +222,11 @@ var
         Exit;
       end;
 
-      _Matche := _RegEx.Match(sLine);
+      _Match := _RegEx.Match(sLine);
 
       New(pItem);
-      pItem.Address := StrToInt('$' + _Matche.Groups[1].Value);
-      pItem.Name    := _Matche.Groups[2].Value;
+      pItem.Address := StrToInt('$' + _Match.Groups[1].Value);
+      pItem.Name    := _Match.Groups[2].Value;
       pItem.Next    := nil;
 
       pUnitItem := Self.FGenesys;
@@ -259,6 +262,82 @@ var
     end;
   end;
 
+  procedure _MAPRows;
+  const
+    REGEX    = '^Line numbers for ([^(]+)\(([^)]+)\).*$';
+    RE_LINES = '(\d{1,})[ ]\d{4}:(.{8})';
+  var
+    _RegEx       : TRegEx;
+    _RegExLines  : TRegEx;
+    _Match       : TMatch;
+    _MatchesLines: TMatchCollection;
+    _MatchLine   : TMatch;
+    sLine        : string;
+    pUnitItem    : PUnit;
+    pMethodItem  : PMethod;
+    pRowItem     : PRow;
+    sUnit        : string;
+    sFileName    : string;
+  begin
+    _RegEx      := TRegEx.Create(REGEX, [roNotEmpty, roCompiled]);
+    _RegExLines := TRegEx.Create(RE_LINES, [roNotEmpty, roCompiled]);
+
+    while not(Eof(MAPHandler)) do
+    begin
+      Readln(MAPHandler, sLine);
+      if (sLine = EmptyStr) then
+      begin
+        Continue;
+      end;
+
+      _Match := _RegEx.Match(sLine);
+      if not(_Match.Success) then
+      begin
+        Continue;
+      end;
+
+      sUnit     := _Match.Groups[1].Value;
+      sFileName := _Match.Groups[2].Value;
+
+      pUnitItem := Self.FGenesys;
+      repeat
+        if (pUnitItem.&Unit = sUnit) then
+        begin
+          pUnitItem.Path := sFileName;
+
+          Readln(MAPHandler);
+
+          while not(Eof(MAPHandler)) do
+          begin
+            Readln(MAPHandler, sLine);
+            if (sLine = EmptyStr) then
+            begin
+              Break;
+            end;
+
+            // TODO: LOCALIZAR METODO E INSERIR A LINHA
+
+
+            _MatchesLines := _RegExLines.Matches(sLine);
+            for _MatchLine in _MatchesLines do
+            begin
+              New(pRowItem);
+
+              pRowItem.Address := StrToInt('$' + _MatchLine.Groups[2].Value);
+              pRowItem.Row     := StrToInt(_MatchLine.Groups[1].Value);
+              pRowItem.Next    := nil;
+            end;
+
+          end;
+
+          Break;
+        end;
+
+        pUnitItem := pUnitItem.Next;
+      until not(Assigned(pUnitItem));
+    end;
+  end;
+
 begin
   Self.Clear;
   _ValidateFile;
@@ -273,6 +352,8 @@ begin
 
     _Discard('  Address             Publics by Value');
     _MAPMethods;
+
+    _MAPRows;
 
   finally
     Close(MAPHandler);

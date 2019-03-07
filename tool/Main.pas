@@ -34,12 +34,27 @@ procedure TForm2.Button1Click(Sender: TObject);
 var
   rLocation: TAVHunterInfo;
 begin
-  Self.FAVHunter.LoadMAPFile(Self.LabeledEditArquivoMAP.Text);
-  Self.FAVHunter.GetLocation(Self.Edit1.Text, rLocation);
+  Self.Button1.Enabled := False;
+  Screen.Cursor        := crHourGlass;
 
-  Self.Memo1.Clear;
-  Self.Memo1.Lines.Add(Format('Unit: %s', [rLocation.&Unit]));
-  Self.Memo1.Lines.Add(Format('Method: %s', [rLocation.Method]));
+  try
+    Self.FAVHunter.LoadMAPFile(Self.LabeledEditArquivoMAP.Text);
+    Self.FAVHunter.GetLocation(Self.Edit1.Text, rLocation);
+
+    Self.Memo1.Clear;
+    with Self.Memo1.Lines do
+    begin
+      Add(Format('Arquivo: %s', [rLocation.FileName]));
+      Add(Format('Unit: %s', [rLocation.&Unit]));
+      Add(Format('Method: %s', [rLocation.Method]));
+      Add(Format('Line: %d', [rLocation.Line]))
+    end;
+
+  finally
+    Self.Button1.Enabled := True;
+    Screen.Cursor        := crDefault;
+  end;
+
 end;
 
 procedure TForm2.FormClose(Sender: TObject; var Action: TCloseAction);
