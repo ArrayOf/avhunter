@@ -1,0 +1,48 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{52909085-FBE6-4B77-847C-5D58038B2A0E}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="avhunter.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="..\example\example.dproj">
+            <Dependencies/>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="avhunter">
+        <MSBuild Projects="avhunter.dproj"/>
+    </Target>
+    <Target Name="avhunter:Clean">
+        <MSBuild Projects="avhunter.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="avhunter:Make">
+        <MSBuild Projects="avhunter.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="example">
+        <MSBuild Projects="..\example\example.dproj"/>
+    </Target>
+    <Target Name="example:Clean">
+        <MSBuild Projects="..\example\example.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="example:Make">
+        <MSBuild Projects="..\example\example.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="avhunter;example"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="avhunter:Clean;example:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="avhunter:Make;example:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>
