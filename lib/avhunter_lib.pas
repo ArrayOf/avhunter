@@ -12,7 +12,9 @@ type
 
   TAVHunter = class(TObject)
   private
-    FInternalList: TObject;
+    FGenesys: Pointer;
+  private
+    procedure Clear;
   public
     procedure LoadMAPFile(const AFileName: string);
     function GetLocation(const AAddress: string; out ALocation: TAVHunterInfo): Boolean;
@@ -27,15 +29,20 @@ uses
 
 type
 
+  PRow = ^TRow;
+
   TRow = record
-    Endereco: Integer;
-    Linha: Integer;
+    Address: Integer;
+    Row: Integer;
   end;
+
+  PMethod = ^TMethod;
 
   TMethod = record
     Address: Integer;
     Name: string;
-    Rows: array of TRow;
+    Next: PMethod;
+    RowsGenesys: PRow;
   end;
 
   PUnit = ^TUnit;
@@ -45,30 +52,55 @@ type
     &End: Integer;
     &Unit: string;
     Path: string;
-    Methods: array of TMethod;
-  end;
-
-  TListAVHunter = class(TList<PUnit>)
-  public
-    destructor Destroy; override;
+    Next: PUnit;
+    MethodGenesys: PMethod;
   end;
 
   { TAVHunter }
 
+procedure TAVHunter.Clear;
+var
+  pUnitItem      : PUnit;
+  pUnitItemNext  : PUnit;
+  pMethodItem    : PMethod;
+  pMethodItemNext: PMethod;
+begin
+  pUnitItem       := nil;
+  pUnitItemNext   := nil;
+  pMethodItem     := nil;
+  pMethodItemNext := nil;
+
+  pUnitItem     := Self.FGenesys;
+  Self.FGenesys := nil;
+
+  while Assigned(pUnitItem) do
+  begin
+
+    // pMethodItem := pUnitItem.MethodGenesys;
+    // while Assigned(pMethodItem) do
+    // begin
+    // pMethodItemNext := pMethodItem.Next;
+    // Dispose(pMethodItem);
+    // pMethodItem := pMethodItemNext;
+    // end;
+
+    pUnitItemNext := pUnitItem.Next;
+    Dispose(pUnitItem);
+    pUnitItem := pUnitItemNext;
+  end;
+end;
+
 destructor TAVHunter.Destroy;
 begin
-  if Assigned(Self.FInternalList) then
-  begin
-    FreeAndNil(Self.FInternalList);
-  end;
+  Self.Clear;
   inherited;
 end;
 
 function TAVHunter.GetLocation(const AAddress: string; out ALocation: TAVHunterInfo): Boolean;
 var
-  iAddress     : Integer;
-  oListAVHunter: TListAVHunter;
-  pItem        : PUnit;
+  iAddress   : Integer;
+  pUnitItem  : PUnit;
+  pMethodItem: PMethod;
 begin
   iAddress := StrToInt('$' + AAddress) - $401000;
   if (iAddress <= 0) then
@@ -76,30 +108,36 @@ begin
     Exit(False);
   end;
 
-  oListAVHunter := TListAVHunter(Self.FInternalList);
+  pUnitItem := Self.FGenesys;
 
-  for pItem in oListAVHunter do
-  begin
-    if (iAddress >= pItem.Start) and (iAddress <= pItem.&End) then
+  repeat
+    if (iAddress >= pUnitItem.Start) and (iAddress <= pUnitItem.&End) then
     begin
-      ALocation.&Unit := pItem.&Unit;
-      Exit(True);
+      ALocation.&Unit := pUnitItem.&Unit;
+
+      pMethodItem := pUnitItem.MethodGenesys;
+      repeat
+        if (iAddress <= pMethodItem.Address) or not(Assigned(pMethodItem.Next)) then
+        begin
+          ALocation.Method := pMethodItem.Name;
+          Exit(True);
+        end;
+
+        pMethodItem := pMethodItem.Next;
+      until not(Assigned(pMethodItem));
+
+      Exit(False);
     end;
-  end;
+
+    pUnitItem := pUnitItem.Next;
+  until not(Assigned(pUnitItem));
 
   Result := False;
 end;
 
 procedure TAVHunter.LoadMAPFile(const AFileName: string);
-
-const
-  REGEX = '^[ ]....:(.{8})[ ](.{8}).*?M=([^ ]+)';
 var
-  _RegEx       : TRegEx;
-  _Matche      : TMatch;
-  MAPHandler   : Text;
-  pItem        : PUnit;
-  oListAVHunter: TListAVHunter;
+  MAPHandler: Text;
 
   procedure _ValidateFile;
   begin
@@ -119,21 +157,25 @@ var
     Readln(MAPHandler);
   end;
 
-  procedure _CreateNewList;
-  begin
-    if (Assigned(Self.FInternalList)) then
-    begin
-      Self.FInternalList.Free;
-    end;
-
-    oListAVHunter      := TListAVHunter.Create;
-    Self.FInternalList := oListAVHunter;
-  end;
-
   procedure _MAPUnits;
+  const
+    REGEX = '^[ ]....:(.{8})[ ](.{8}).*?M=([^ ]+)';
   var
-    sLine: string;
+    _RegEx   : TRegEx;
+    _Matche  : TMatch;
+    sLine    : string;
+    pItem    : PUnit;
+    pPrevious: PUnit;
   begin
+    _RegEx := TRegEx.Create(REGEX, [roNotEmpty, roCompiled]);
+
+    New(pPrevious);
+    pPrevious.Start := -1;
+    pPrevious.&End  := -1;
+    pPrevious.&Unit := '** PONTEIRO GENESYS **';
+    pPrevious.Next  := nil;
+    Self.FGenesys   := pPrevious;
+
     while not(Eof(MAPHandler)) do
     begin
       Readln(MAPHandler, sLine);
@@ -145,18 +187,30 @@ var
       _Matche := _RegEx.Match(sLine);
 
       New(pItem);
-      pItem.Start := StrToInt('$' + _Matche.Groups[1].Value);
-      pItem.&End  := pItem.Start + StrToInt('$' + _Matche.Groups[2].Value) - 1;
-      pItem.&Unit := _Matche.Groups[3].Value;
+      pItem.Start         := StrToInt('$' + _Matche.Groups[1].Value);
+      pItem.&End          := pItem.Start + StrToInt('$' + _Matche.Groups[2].Value) - 1;
+      pItem.&Unit         := _Matche.Groups[3].Value;
+      pItem.MethodGenesys := nil;
+      pItem.Next          := nil;
 
-      oListAVHunter.Add(pItem);
+      pPrevious.Next := pItem;
+      pPrevious      := pItem;
     end;
   end;
 
   procedure _MAPMethods;
+  const
+    REGEX = '^[ ].{4}:(.{8}).{7}(.*)$';
   var
-    sLine: string;
+    _RegEx   : TRegEx;
+    _Matche  : TMatch;
+    sLine    : string;
+    pItem    : PMethod;
+    pPrevious: PMethod;
+    pUnitItem: PUnit;
   begin
+    _RegEx := TRegEx.Create(REGEX, [roNotEmpty, roCompiled]);
+
     while not(Eof(MAPHandler)) do
     begin
       Readln(MAPHandler, sLine);
@@ -165,16 +219,51 @@ var
         Exit;
       end;
 
-      OutputDebugString(PChar(sLine));
+      _Matche := _RegEx.Match(sLine);
+
+      New(pItem);
+      pItem.Address := StrToInt('$' + _Matche.Groups[1].Value);
+      pItem.Name    := _Matche.Groups[2].Value;
+      pItem.Next    := nil;
+
+      pUnitItem := Self.FGenesys;
+      repeat
+        if (pItem.Address >= pUnitItem.Start) and (pItem.Address <= pUnitItem.&End) then
+        begin
+          if not Assigned(pUnitItem.MethodGenesys) then
+          begin
+            New(pPrevious);
+
+            pPrevious.Address     := -1;
+            pPrevious.Name        := '** PONTEIRO GENESYS **';
+            pPrevious.Next        := nil;
+            pPrevious.RowsGenesys := nil;
+
+            pUnitItem.MethodGenesys := pPrevious;
+          end;
+
+          pPrevious := pUnitItem.MethodGenesys;
+          while Assigned(pPrevious.Next) do
+          begin
+            pPrevious := pPrevious.Next;
+          end;
+          pPrevious.Next := pItem;
+
+          Break;
+        end;
+
+        pUnitItem := pUnitItem.Next;
+      until not Assigned(pUnitItem);
+
+      // OutputDebugString(PChar(sLine));
     end;
   end;
 
 begin
-  _CreateNewList;
+  Self.Clear;
   _ValidateFile;
 
   try
-    _RegEx := TRegEx.Create(REGEX, [roNotEmpty, roCompiled]);
 
     Assign(MAPHandler, AFileName);
     Reset(MAPHandler);
@@ -189,20 +278,6 @@ begin
     Close(MAPHandler);
   end;
 
-end;
-
-{ TListAVHunter }
-
-destructor TListAVHunter.Destroy;
-var
-  pItem: PUnit;
-begin
-  for pItem in Self do
-  begin
-    Dispose(pItem);
-  end;
-
-  inherited;
 end;
 
 end.

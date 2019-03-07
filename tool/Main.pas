@@ -30,16 +30,16 @@ implementation
 
 {$R *.dfm}
 
-
 procedure TForm2.Button1Click(Sender: TObject);
 var
-rLocation: TAVHunterInfo;
+  rLocation: TAVHunterInfo;
 begin
   Self.FAVHunter.LoadMAPFile(Self.LabeledEditArquivoMAP.Text);
-  Self.FAVHunter.GetLocation(Self.Edit1.Text,  rLocation );
+  Self.FAVHunter.GetLocation(Self.Edit1.Text, rLocation);
 
   Self.Memo1.Clear;
   Self.Memo1.Lines.Add(Format('Unit: %s', [rLocation.&Unit]));
+  Self.Memo1.Lines.Add(Format('Method: %s', [rLocation.Method]));
 end;
 
 procedure TForm2.FormClose(Sender: TObject; var Action: TCloseAction);
@@ -50,7 +50,7 @@ end;
 procedure TForm2.FormCreate(Sender: TObject);
 begin
   ReportMemoryLeaksOnShutdown := True;
-  Self.FAVHunter := TAVHunter.Create;
+  Self.FAVHunter              := TAVHunter.Create;
 end;
 
 end.
