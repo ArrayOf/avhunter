@@ -47,7 +47,7 @@ begin
       Add(Format('Arquivo: %s', [rLocation.FileName]));
       Add(Format('Unit: %s', [rLocation.&Unit]));
       Add(Format('Method: %s', [rLocation.Method]));
-      Add(Format('Line: %d', [rLocation.Line]))
+      Add(Format('Line: %d', [rLocation.Line]));
     end;
 
   finally

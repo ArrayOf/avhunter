@@ -25,13 +25,14 @@ implementation
 
 procedure TForm3.Button1Click(Sender: TObject);
 var
-slTeste : TStringList;
+  slTeste: TStringList;
 begin
   slTeste := TStringList.Create;
   slTeste.Add('OLÁ MUNDO!');
   FreeAndNil(slTeste);
 
-  slTeste.Add('olá mundo!')
+  slTeste.Add('olá mundo!');
+  slTeste.Add('olá mundo!');
 end;
 
 end.

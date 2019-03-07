@@ -50,6 +50,6 @@ object Form2: TForm2
     Width = 200
     Height = 21
     TabOrder = 3
-    Text = '005EB5EF'
+    Text = '005eb5ef'
   end
 end

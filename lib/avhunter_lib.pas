@@ -44,7 +44,7 @@ type
     Address: Integer;
     Name: string;
     Next: PMethod;
-    RowsGenesys: PRow;
+    RowGenesys: PRow;
   end;
 
   PUnit = ^TUnit;
@@ -103,6 +103,7 @@ var
   iAddress   : Integer;
   pUnitItem  : PUnit;
   pMethodItem: PMethod;
+  pRowItem   : PRow;
 begin
   iAddress := StrToInt('$' + AAddress) - $401000;
   if (iAddress <= 0) then
@@ -123,7 +124,19 @@ begin
         if (iAddress <= pMethodItem.Address) or not(Assigned(pMethodItem.Next)) then
         begin
           ALocation.Method := pMethodItem.Name;
-          Exit(True);
+
+          pRowItem := pMethodItem.RowGenesys;
+          repeat
+            if (iAddress <= pRowItem.Address) or not(Assigned(pRowItem.Next)) then
+            begin
+              ALocation.Line := pRowItem.Row;
+              Exit(True);
+            end;
+
+            pRowItem := pRowItem.Next;
+          until not(Assigned(pRowItem)) ;
+
+          Exit(False);
         end;
 
         pMethodItem := pMethodItem.Next;
@@ -205,12 +218,12 @@ var
   const
     REGEX = '^[ ].{4}:(.{8}).{7}(.*)$';
   var
-    _RegEx   : TRegEx;
-    _Match   : TMatch;
-    sLine    : string;
-    pItem    : PMethod;
-    pPrevious: PMethod;
-    pUnitItem: PUnit;
+    _RegEx     : TRegEx;
+    _Match     : TMatch;
+    sLine      : string;
+    pMethodItem: PMethod;
+    pPrevious  : PMethod;
+    pUnitItem  : PUnit;
   begin
     _RegEx := TRegEx.Create(REGEX, [roNotEmpty, roCompiled]);
 
@@ -224,23 +237,24 @@ var
 
       _Match := _RegEx.Match(sLine);
 
-      New(pItem);
-      pItem.Address := StrToInt('$' + _Match.Groups[1].Value);
-      pItem.Name    := _Match.Groups[2].Value;
-      pItem.Next    := nil;
+      New(pMethodItem);
+      pMethodItem.Address    := StrToInt('$' + _Match.Groups[1].Value);
+      pMethodItem.Name       := _Match.Groups[2].Value;
+      pMethodItem.Next       := nil;
+      pMethodItem.RowGenesys := nil;
 
       pUnitItem := Self.FGenesys;
       repeat
-        if (pItem.Address >= pUnitItem.Start) and (pItem.Address <= pUnitItem.&End) then
+        if (pMethodItem.Address >= pUnitItem.Start) and (pMethodItem.Address <= pUnitItem.&End) then
         begin
           if not Assigned(pUnitItem.MethodGenesys) then
           begin
             New(pPrevious);
 
-            pPrevious.Address     := -1;
-            pPrevious.Name        := '** PONTEIRO GENESYS **';
-            pPrevious.Next        := nil;
-            pPrevious.RowsGenesys := nil;
+            pPrevious.Address    := -1;
+            pPrevious.Name       := '** PONTEIRO GENESYS **';
+            pPrevious.Next       := nil;
+            pPrevious.RowGenesys := nil;
 
             pUnitItem.MethodGenesys := pPrevious;
           end;
@@ -250,7 +264,7 @@ var
           begin
             pPrevious := pPrevious.Next;
           end;
-          pPrevious.Next := pItem;
+          pPrevious.Next := pMethodItem;
 
           Break;
         end;
@@ -276,6 +290,8 @@ var
     pUnitItem    : PUnit;
     pMethodItem  : PMethod;
     pRowItem     : PRow;
+    pRowGenesys  : PRow;
+    pRowPrevious : PRow;
     sUnit        : string;
     sFileName    : string;
   begin
@@ -315,9 +331,6 @@ var
               Break;
             end;
 
-            // TODO: LOCALIZAR METODO E INSERIR A LINHA
-
-
             _MatchesLines := _RegExLines.Matches(sLine);
             for _MatchLine in _MatchesLines do
             begin
@@ -326,6 +339,37 @@ var
               pRowItem.Address := StrToInt('$' + _MatchLine.Groups[2].Value);
               pRowItem.Row     := StrToInt(_MatchLine.Groups[1].Value);
               pRowItem.Next    := nil;
+
+              pMethodItem := pUnitItem.MethodGenesys;
+
+              if not Assigned(pMethodItem) then
+              begin
+                Continue;
+              end;
+
+              repeat
+                if (pRowItem.Address <= pMethodItem.Address) or not(Assigned(pMethodItem.Next)) then
+                begin
+                  if not(Assigned(pMethodItem.RowGenesys)) then
+                  begin
+                    New(pRowGenesys);
+
+                    pRowGenesys.Address := -1;
+                    pRowGenesys.Row     := -1;
+                    pRowGenesys.Next    := nil;
+
+                    pMethodItem.RowGenesys := pRowGenesys;
+                    pRowPrevious := pRowGenesys;
+                  end;
+
+                  pRowPrevious.Next := pRowItem;
+                  pRowPrevious := pRowPrevious.Next;
+
+                  Break;
+                end;
+
+                pMethodItem := pMethodItem.Next;
+              until not(Assigned(pMethodItem));
             end;
 
           end;
