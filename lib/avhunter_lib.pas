@@ -2,6 +2,9 @@ unit avhunter_lib;
 
 interface
 
+uses
+  System.Generics.Collections;
+
 type
 
   TAVHunterInfo = record
@@ -14,9 +17,11 @@ type
   TAVHunter = class(TObject)
   private
     FGenesys: Pointer;
+    FTrash: TList<Pointer>;
   private
     procedure Clear;
   public
+    procedure Testar;
     procedure LoadMAPFile(const AFileName: string);
     function GetLocation(const AAddress: string; out ALocation: TAVHunterInfo): Boolean;
     destructor Destroy; override;
@@ -25,7 +30,7 @@ type
 implementation
 
 uses
-  System.SysUtils, System.Generics.Collections, System.RegularExpressions,
+  System.SysUtils, System.RegularExpressions,
   Winapi.Windows;
 
 type
@@ -66,25 +71,38 @@ var
   pUnitItemNext  : PUnit;
   pMethodItem    : PMethod;
   pMethodItemNext: PMethod;
+  pRowItem       : PRow;
+  pRowitemNext   : PRow;
 begin
   pUnitItem       := nil;
   pUnitItemNext   := nil;
   pMethodItem     := nil;
   pMethodItemNext := nil;
+  pRowItem        := nil;
+  pRowitemNext    := nil;
 
   pUnitItem     := Self.FGenesys;
   Self.FGenesys := nil;
 
   while Assigned(pUnitItem) do
   begin
+    pMethodItem := pUnitItem.MethodGenesys;
 
-    // pMethodItem := pUnitItem.MethodGenesys;
-    // while Assigned(pMethodItem) do
-    // begin
-    // pMethodItemNext := pMethodItem.Next;
-    // Dispose(pMethodItem);
-    // pMethodItem := pMethodItemNext;
-    // end;
+    while Assigned(pMethodItem) do
+    begin
+      pMethodItemNext := pMethodItem.Next;
+
+      pRowItem := pMethodItem.RowGenesys;
+      while Assigned(pRowItem) do
+      begin
+        pRowitemNext := pRowItem.Next;
+        Dispose(pRowItem);
+        pRowItem := pRowitemNext;
+      end;
+
+      Dispose(pMethodItem);
+      pMethodItem := pMethodItemNext;
+    end;
 
     pUnitItemNext := pUnitItem.Next;
     Dispose(pUnitItem);
@@ -134,7 +152,7 @@ begin
             end;
 
             pRowItem := pRowItem.Next;
-          until not(Assigned(pRowItem)) ;
+          until not(Assigned(pRowItem));
 
           Exit(False);
         end;
@@ -218,12 +236,13 @@ var
   const
     REGEX = '^[ ].{4}:(.{8}).{7}(.*)$';
   var
-    _RegEx     : TRegEx;
-    _Match     : TMatch;
-    sLine      : string;
-    pMethodItem: PMethod;
-    pPrevious  : PMethod;
-    pUnitItem  : PUnit;
+    _RegEx        : TRegEx;
+    _Match        : TMatch;
+    sLine         : string;
+    pMethodItem   : PMethod;
+    pMethodGenesys: PMethod;
+    pPrevious     : PMethod;
+    pUnitItem     : PUnit;
   begin
     _RegEx := TRegEx.Create(REGEX, [roNotEmpty, roCompiled]);
 
@@ -249,14 +268,14 @@ var
         begin
           if not Assigned(pUnitItem.MethodGenesys) then
           begin
-            New(pPrevious);
+            New(pMethodGenesys);
 
-            pPrevious.Address    := -1;
-            pPrevious.Name       := '** PONTEIRO GENESYS **';
-            pPrevious.Next       := nil;
-            pPrevious.RowGenesys := nil;
+            pMethodGenesys.Address    := -1;
+            pMethodGenesys.Name       := '** PONTEIRO GENESYS **';
+            pMethodGenesys.Next       := nil;
+            pMethodGenesys.RowGenesys := nil;
 
-            pUnitItem.MethodGenesys := pPrevious;
+            pUnitItem.MethodGenesys := pMethodGenesys;
           end;
 
           pPrevious := pUnitItem.MethodGenesys;
@@ -359,11 +378,11 @@ var
                     pRowGenesys.Next    := nil;
 
                     pMethodItem.RowGenesys := pRowGenesys;
-                    pRowPrevious := pRowGenesys;
+                    pRowPrevious           := pRowGenesys;
                   end;
 
                   pRowPrevious.Next := pRowItem;
-                  pRowPrevious := pRowPrevious.Next;
+                  pRowPrevious      := pRowItem;
 
                   Break;
                 end;
@@ -403,6 +422,16 @@ begin
     Close(MAPHandler);
   end;
 
+end;
+
+procedure TAVHunter.Testar;
+var
+  pRowItem: PRow;
+begin
+  New(pRowItem);
+  pRowItem.Row  := 100;
+  pRowItem.Next := pRowItem;
+  Dispose(pRowItem);
 end;
 
 end.

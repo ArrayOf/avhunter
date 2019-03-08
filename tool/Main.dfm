@@ -52,4 +52,13 @@ object Form2: TForm2
     TabOrder = 3
     Text = '005eb5ef'
   end
+  object Button2: TButton
+    Left = 375
+    Top = 112
+    Width = 75
+    Height = 25
+    Caption = 'Button2'
+    TabOrder = 4
+    OnClick = Button2Click
+  end
 end

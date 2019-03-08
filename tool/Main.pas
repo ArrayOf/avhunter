@@ -13,9 +13,11 @@ type
     Button1: TButton;
     Memo1: TMemo;
     Edit1: TEdit;
+    Button2: TButton;
     procedure FormCreate(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure Button1Click(Sender: TObject);
+    procedure Button2Click(Sender: TObject);
   private
     { Private declarations }
     FAVHunter: TAVHunter;
@@ -55,6 +57,11 @@ begin
     Screen.Cursor        := crDefault;
   end;
 
+end;
+
+procedure TForm2.Button2Click(Sender: TObject);
+begin
+  Self.FAVHunter.Testar;
 end;
 
 procedure TForm2.FormClose(Sender: TObject; var Action: TCloseAction);
