@@ -120,7 +120,7 @@ begin
 
           pRowItem := pMethodItem.RowGenesys;
           repeat
-            if (iAddress <= pRowItem.Address) or not(Assigned(pRowItem.Next)) then
+            if (iAddress <= pRowItem.Next.Address) or not(Assigned(pRowItem.Next)) then
             begin
               ALocation.Line := pRowItem.Row;
               Exit(True);
