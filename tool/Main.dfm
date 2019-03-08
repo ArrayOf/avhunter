@@ -1,64 +1,138 @@
-object Form2: TForm2
+object fMain: TfMain
   Left = 0
   Top = 0
-  Caption = 'AVHunter'
-  ClientHeight = 411
-  ClientWidth = 458
+  Caption = 'AVHunter | Apontador de AccessViolation'
+  ClientHeight = 326
+  ClientWidth = 760
   Color = clBtnFace
   Font.Charset = ANSI_CHARSET
   Font.Color = clWindowText
-  Font.Height = -11
+  Font.Height = -16
   Font.Name = 'Segoe UI'
   Font.Style = []
   OldCreateOrder = False
+  Position = poScreenCenter
   OnClose = FormClose
   OnCreate = FormCreate
   PixelsPerInch = 96
-  TextHeight = 13
-  object LabeledEditArquivoMAP: TLabeledEdit
-    Left = 16
-    Top = 32
-    Width = 433
-    Height = 21
-    EditLabel.Width = 69
-    EditLabel.Height = 13
-    EditLabel.Caption = 'Arquivo MAP:'
-    TabOrder = 0
-    Text = 'C:\fontes_avhunter\example\Win32\Debug\example.map'
+  TextHeight = 21
+  object StatusBar1: TStatusBar
+    Left = 0
+    Top = 307
+    Width = 760
+    Height = 19
+    Panels = <
+      item
+        Width = 50
+      end
+      item
+        Width = 50
+      end
+      item
+        Width = 50
+      end>
+    ExplicitLeft = 296
+    ExplicitTop = 200
+    ExplicitWidth = 0
   end
-  object Button1: TButton
-    Left = 375
-    Top = 59
-    Width = 75
-    Height = 25
-    Caption = '&Processar'
+  object Panel1: TPanel
+    Left = 0
+    Top = 0
+    Width = 760
+    Height = 307
+    Align = alClient
+    BevelOuter = bvNone
+    Caption = 'Panel1'
+    ParentBackground = False
+    ShowCaption = False
     TabOrder = 1
-    OnClick = Button1Click
+    ExplicitTop = -6
+    ExplicitWidth = 785
+    object SpeedButton1: TSpeedButton
+      Left = 663
+      Top = 32
+      Width = 82
+      Height = 29
+      Action = ActionArquivo
+    end
+    object SpeedButton2: TSpeedButton
+      Left = 431
+      Top = 88
+      Width = 82
+      Height = 29
+      Action = ActionProcessar
+    end
+    object Label1: TLabel
+      Left = 215
+      Top = 149
+      Width = 72
+      Height = 21
+      Caption = 'Resultado:'
+    end
+    object Memo1: TMemo
+      Left = 0
+      Top = 0
+      Width = 209
+      Height = 307
+      Align = alLeft
+      Lines.Strings = (
+        '## Como usar'
+        ''
+        'No Delphi ative a gera'#231#227'o '
+        'do arquivo MAP')
+      TabOrder = 0
+    end
+    object LabeledEdit1: TLabeledEdit
+      Left = 215
+      Top = 32
+      Width = 442
+      Height = 29
+      EditLabel.Width = 95
+      EditLabel.Height = 21
+      EditLabel.Caption = 'Arquivo MAP:'
+      TabOrder = 1
+    end
+    object LabeledEdit2: TLabeledEdit
+      Left = 215
+      Top = 88
+      Width = 210
+      Height = 29
+      EditLabel.Width = 155
+      EditLabel.Height = 21
+      EditLabel.Caption = 'Endere'#231'o de mem'#243'ria:'
+      TabOrder = 2
+    end
+    object Memo2: TMemo
+      Left = 215
+      Top = 176
+      Width = 530
+      Height = 125
+      Font.Charset = ANSI_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -16
+      Font.Name = 'Courier New'
+      Font.Style = []
+      Lines.Strings = (
+        'Memo2')
+      ParentFont = False
+      TabOrder = 3
+    end
   end
-  object Memo1: TMemo
-    Left = 17
-    Top = 160
-    Width = 433
-    Height = 225
-    Lines.Strings = (
-      'Memo1')
-    TabOrder = 2
+  object ActionList1: TActionList
+    Left = 72
+    Top = 120
+    object ActionArquivo: TAction
+      Caption = '&Arquivo'
+      ShortCut = 16463
+      OnExecute = ActionArquivoExecute
+    end
+    object ActionProcessar: TAction
+      Caption = 'Processar'
+      OnExecute = ActionProcessarExecute
+    end
   end
-  object Edit1: TEdit
-    Left = 17
-    Top = 61
-    Width = 200
-    Height = 21
-    TabOrder = 3
-    Text = '005eb5ef'
-  end
-  object Button2: TButton
-    Left = 375
-    Top = 112
-    Width = 75
-    Height = 25
-    Caption = 'Button2'
-    TabOrder = 4
-    OnClick = Button2Click
+  object OpenDialog1: TOpenDialog
+    Left = 72
+    Top = 208
   end
 end

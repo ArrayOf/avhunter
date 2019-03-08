@@ -3,76 +3,113 @@ unit Main;
 interface
 
 uses
-  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
-  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Vcl.ExtCtrls,
-  avhunter_lib;
+  Winapi.Windows,
+  Winapi.Messages,
+  System.SysUtils,
+  System.Variants,
+  System.Classes,
+  Vcl.Graphics,
+  Vcl.Controls,
+  Vcl.Forms,
+  Vcl.Dialogs,
+  Vcl.StdCtrls,
+  Vcl.ExtCtrls,
+  avhunter_lib,
+  System.Actions,
+  Vcl.ActnList,
+  Vcl.ComCtrls,
+  Vcl.Buttons;
 
 type
-  TForm2 = class(TForm)
-    LabeledEditArquivoMAP: TLabeledEdit;
-    Button1: TButton;
+  TfMain = class(TForm)
+    StatusBar1: TStatusBar;
+    Panel1: TPanel;
     Memo1: TMemo;
-    Edit1: TEdit;
-    Button2: TButton;
+    ActionList1: TActionList;
+    LabeledEdit1: TLabeledEdit;
+    SpeedButton1: TSpeedButton;
+    LabeledEdit2: TLabeledEdit;
+    SpeedButton2: TSpeedButton;
+    Memo2: TMemo;
+    Label1: TLabel;
+    ActionArquivo: TAction;
+    OpenDialog1: TOpenDialog;
+    ActionProcessar: TAction;
     procedure FormCreate(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
-    procedure Button1Click(Sender: TObject);
-    procedure Button2Click(Sender: TObject);
+    procedure ActionArquivoExecute(Sender: TObject);
+    procedure ActionProcessarExecute(Sender: TObject);
   private
     { Private declarations }
     FAVHunter: TAVHunter;
+    function GetFileName: string;
+    function GetAddress: string;
+    property FileName: string read GetFileName;
+    property Address: string read GetAddress;
   public
     { Public declarations }
   end;
 
 var
-  Form2: TForm2;
+  fMain: TfMain;
 
 implementation
 
 {$R *.dfm}
 
-procedure TForm2.Button1Click(Sender: TObject);
+procedure TfMain.ActionArquivoExecute(Sender: TObject);
+begin
+  if Self.OpenDialog1.Execute(Self.Handle) then
+  begin
+    Self.LabeledEdit1.Text := Self.OpenDialog1.FileName;
+  end;
+end;
+
+procedure TfMain.ActionProcessarExecute(Sender: TObject);
 var
   rLocation: TAVHunterInfo;
 begin
-  Self.Button1.Enabled := False;
-  Screen.Cursor        := crHourGlass;
+  Self.ActionProcessar.Enabled := False;
+  Screen.Cursor                := crHourGlass;
 
   try
-    Self.FAVHunter.LoadMAPFile(Self.LabeledEditArquivoMAP.Text);
-    Self.FAVHunter.GetLocation(Self.Edit1.Text, rLocation);
+    Self.FAVHunter.LoadMAPFile(Self.FileName);
+    Self.FAVHunter.GetLocation(Self.Address, rLocation);
 
-    Self.Memo1.Clear;
-    with Self.Memo1.Lines do
+    Self.Memo2.Clear;
+    with Self.Memo2.Lines do
     begin
-      Add(Format('Arquivo: %s', [rLocation.FileName]));
-      Add(Format('Unit: %s', [rLocation.&Unit]));
-      Add(Format('Method: %s', [rLocation.Method]));
-      Add(Format('Line: %d', [rLocation.Line]));
+      Add(Format('Arquivo...: %s', [rLocation.FileName]));
+      Add(Format('Unit......: %s', [rLocation.&Unit]));
+      Add(Format('Method....: %s', [rLocation.Method]));
+      Add(Format('Line......: %d', [rLocation.Line]));
     end;
 
   finally
-    Self.Button1.Enabled := True;
-    Screen.Cursor        := crDefault;
+    Self.ActionProcessar.Enabled := True;
+    Screen.Cursor                := crDefault;
   end;
-
 end;
 
-procedure TForm2.Button2Click(Sender: TObject);
-begin
-  Self.FAVHunter.Testar;
-end;
-
-procedure TForm2.FormClose(Sender: TObject; var Action: TCloseAction);
+procedure TfMain.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
   Self.FAVHunter.Free;
 end;
 
-procedure TForm2.FormCreate(Sender: TObject);
+procedure TfMain.FormCreate(Sender: TObject);
 begin
   ReportMemoryLeaksOnShutdown := True;
   Self.FAVHunter              := TAVHunter.Create;
+end;
+
+function TfMain.GetAddress: string;
+begin
+  Result := Self.LabeledEdit2.Text;
+end;
+
+function TfMain.GetFileName: string;
+begin
+  Result := Self.LabeledEdit1.Text;
 end;
 
 end.
