@@ -37,8 +37,10 @@ var
 begin
   slTeste := TStringList.Create;
   slTeste.Add('OLÁ MUNDO!');
+  slTeste.Add('OLÁ MUNDO!');
   FreeAndNil(slTeste);
 
+  slTeste.Add('olá mundo!');
   slTeste.Add('olá mundo!');
   slTeste.Add('olá mundo!');
 end;

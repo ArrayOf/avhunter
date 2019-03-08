@@ -168,7 +168,7 @@ var
 
   procedure _MAPUnits;
   const
-    REGEX = '^[ ]....:(.{8})[ ](.{8}).*?M=([^ ]+)';
+    REGEX = '^[ ].{4}:(.{8})[ ](.{8})[ ].*?M=([^ ]+)';
   var
     _RegEx   : TRegEx;
     _Match   : TMatch;
@@ -181,11 +181,11 @@ var
     New(pPrevious);
     Self.FTrash.Add(pPrevious);
 
-    pPrevious^.Start := -1;
-    pPrevious^.&End  := -1;
-    pPrevious^.&Unit := '** PONTEIRO GENESYS **';
-    pPrevious^.Next  := nil;
-    Self.FGenesys    := pPrevious;
+    pPrevious.Start := -1;
+    pPrevious.&End  := -1;
+    pPrevious.&Unit := '** PONTEIRO GENESYS **';
+    pPrevious.Next  := nil;
+    Self.FGenesys   := pPrevious;
 
     while not(Eof(MAPHandler)) do
     begin
@@ -196,15 +196,21 @@ var
       end;
 
       _Match := _RegEx.Match(sLine);
+      if not(_Match.Success) then
+      begin
+        Continue;
+      end;
 
       New(pItem);
       Self.FTrash.Add(pItem);
 
-      pItem^.Start         := StrToInt('$' + _Match.Groups[1].Value);
-      pItem^.&End          := pItem.Start + StrToInt('$' + _Match.Groups[2].Value) - 1;
-      pItem^.&Unit         := _Match.Groups[3].Value;
-      pItem^.MethodGenesys := nil;
-      pItem^.Next          := nil;
+      pItem.Start         := StrToInt('$' + _Match.Groups[1].Value);
+      pItem.&End          := pItem.Start + StrToInt('$' + _Match.Groups[2].Value) - 1;
+      pItem.&Unit         := _Match.Groups[3].Value;
+      pItem.MethodGenesys := nil;
+      pItem.Next          := nil;
+
+      // OutputDebugString(PChar(_Match.Groups[3].Value));
 
       pPrevious.Next := pItem;
       pPrevious      := pItem;
@@ -223,7 +229,8 @@ var
     pPrevious     : PMethod;
     pUnitItem     : PUnit;
   begin
-    _RegEx := TRegEx.Create(REGEX, [roNotEmpty, roCompiled]);
+    _RegEx    := TRegEx.Create(REGEX, [roNotEmpty, roCompiled]);
+    pUnitItem := Self.FGenesys;
 
     while not(Eof(MAPHandler)) do
     begin
@@ -243,8 +250,8 @@ var
       pMethodItem.Next       := nil;
       pMethodItem.RowGenesys := nil;
 
-      pUnitItem := Self.FGenesys;
-      repeat
+      while Assigned(pUnitItem) do
+      begin
         if (pMethodItem.Address >= pUnitItem.Start) and (pMethodItem.Address <= pUnitItem.&End) then
         begin
           if not Assigned(pUnitItem.MethodGenesys) then
@@ -271,12 +278,9 @@ var
         end;
 
         pUnitItem := pUnitItem.Next;
-      until not Assigned(pUnitItem);
-
-      // OutputDebugString(PChar(sLine));
+      end;
     end;
   end;
-
   procedure _MAPRows;
   const
     REGEX    = '^Line numbers for ([^(]+)\(([^)]+)\).*$';
